@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GameVault">
+<meta name="theme-color" content="#0a0a0f">
+<title>GameVault · JM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Barlow+Condensed:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0a0a0f;
+    --surface:  #12121a;
+    --card:     #1a1a26;
+    --border:   #2a2a3a;
+    --accent:   #e63946;
+    --accent2:  #ff6b35;
+    --gold:     #ffd700;
+    --text:     #e8e8f0;
+    --muted:    #6b6b88;
+    --green:    #4caf50;
+    --radius:   10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Barlow Condensed', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,10,15,0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: env(safe-area-inset-top, 0) 0 0;
+  }
+  .header-inner {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+  }
+  .logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700; font-size: 22px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    white-space: nowrap;
+  }
+  .logo span { color: var(--text); }
+
+  .search-wrap {
+    flex: 1;
+    position: relative;
+  }
+  .search-wrap svg {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    width: 15px; height: 15px; stroke: var(--muted); fill: none;
+    pointer-events: none;
+  }
+  #search {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px;
+    padding: 8px 10px 8px 32px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  #search:focus { border-color: var(--accent); }
+  #search::placeholder { color: var(--muted); }
+
+  /* ── PLATFORM FILTER ── */
+  .platform-scroll {
+    display: flex; gap: 6px;
+    padding: 8px 14px 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .platform-scroll::-webkit-scrollbar { display: none; }
+  .pf-btn {
+    flex-shrink: 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--muted);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .pf-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .pf-btn:not(.active):active { background: var(--border); }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display: flex; gap: 6px;
+    padding: 0 14px 10px;
+    font-size: 12px; color: var(--muted);
+    align-items: center;
+  }
+  .stats-bar strong { color: var(--text); font-weight: 600; }
+  .dot { width: 3px; height: 3px; background: var(--border); border-radius: 50%; }
+  .badge-fin { color: var(--green); }
+  .badge-pend { color: var(--accent2); }
+
+  /* ── FILTER ROW ── */
+  .filter-row {
+    display: flex; gap: 8px;
+    padding: 0 14px 10px;
+    align-items: center;
+  }
+  .filter-select {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 14px;
+    padding: 7px 10px;
+    outline: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+  }
+  .filter-select option { background: var(--surface); }
+
+  .btn-add {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    width: 36px; height: 36px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: transform .1s;
+  }
+  .btn-add:active { transform: scale(.92); }
+
+  /* ── GAME LIST ── */
+  #game-list {
+    padding: 0 14px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  .game-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 11px 13px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer;
+    transition: border-color .15s, transform .1s;
+    position: relative;
+    overflow: hidden;
+  }
+  .game-card::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+  }
+  .game-card.fin::before { background: var(--green); }
+  .game-card.pend::before { background: var(--accent2); }
+  .game-card.none::before { background: var(--border); }
+  .game-card:active { transform: scale(.985); border-color: var(--accent); }
+
+  .platform-badge {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    letter-spacing: .5px;
+  }
+
+  .game-info { flex: 1; min-width: 0; }
+  .game-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    line-height: 1.2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .game-sub {
+    font-size: 12px; color: var(--muted); margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .score-pill {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+  .score-high { background: rgba(76,175,80,.15); color: var(--green); }
+  .score-mid  { background: rgba(255,107,53,.15); color: var(--accent2); }
+  .score-low  { background: rgba(230,57,70,.12);  color: var(--accent); }
+  .score-none { background: var(--surface); color: var(--muted); font-size: 12px; }
+
+  /* ── EMPTY ── */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty svg { width: 48px; height: 48px; stroke: var(--border); fill: none; margin-bottom: 12px; }
+  .empty p { font-size: 15px; }
+
+  /* ── MODAL (detail) ── */
+  .modal-bg {
+    display: none;
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,.75);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    width: 100%; max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 0 0 calc(20px + env(safe-area-inset-bottom, 0px));
+    animation: slideUp .25s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(40px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  .modal-handle {
+    display: flex; justify-content: center; padding: 12px 0 4px;
+  }
+  .modal-handle div {
+    width: 36px; height: 4px;
+    background: var(--border); border-radius: 2px;
+  }
+  .modal-header {
+    padding: 8px 18px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-platform {
+    display: inline-block;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700; font-size: 11px;
+    padding: 3px 9px; border-radius: 5px;
+    margin-bottom: 8px; letter-spacing: .5px;
+  }
+  .modal-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700; font-size: 22px;
+    line-height: 1.2;
+  }
+  .modal-edition {
+    font-size: 13px; color: var(--muted); margin-top: 3px;
+  }
+  .modal-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+
+  .info-row {
+    display: flex; align-items: flex-start;
+    gap: 10px; font-size: 14px;
+  }
+  .info-label {
+    color: var(--muted); font-size: 12px; min-width: 80px; padding-top: 1px;
+    font-weight: 500; letter-spacing: .3px; text-transform: uppercase;
+  }
+  .info-val { color: var(--text); flex: 1; }
+  .info-val.fin-si  { color: var(--green); font-weight: 600; }
+  .info-val.fin-no  { color: var(--accent2); font-weight: 600; }
+  .score-big {
+    display: inline-block;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700; font-size: 20px;
+    padding: 4px 12px; border-radius: 8px;
+  }
+  .modal-obs {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px; color: var(--muted);
+    font-style: italic; line-height: 1.5;
+  }
+  .modal-footer {
+    padding: 0 18px;
+    display: flex; gap: 8px;
+  }
+  .btn-close-modal {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600; font-size: 16px;
+    padding: 12px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-close-modal:active { background: var(--border); }
+  .btn-delete {
+    background: rgba(230,57,70,.12);
+    border: 1px solid rgba(230,57,70,.3);
+    border-radius: 10px;
+    color: var(--accent);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600; font-size: 16px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-delete:active { background: rgba(230,57,70,.25); }
+
+  /* ── ADD MODAL ── */
+  .add-modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    width: 100%; max-width: 480px;
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 0 0 calc(20px + env(safe-area-inset-bottom, 0px));
+    animation: slideUp .25s ease;
+  }
+  .add-modal h2 {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700; font-size: 20px;
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .form-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; }
+  .form-group label {
+    display: block; font-size: 12px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .4px; font-weight: 500;
+    margin-bottom: 5px;
+  }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px;
+    padding: 9px 11px;
+    outline: none;
+    transition: border-color .2s;
+    -webkit-appearance: none;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+  .form-select option { background: var(--surface); }
+  .form-textarea { resize: none; min-height: 60px; }
+  .form-row { display: flex; gap: 10px; }
+  .form-row .form-group { flex: 1; }
+  .btn-save {
+    width: 100%;
+    background: var(--accent);
+    border: none; border-radius: 10px;
+    color: #fff;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700; font-size: 17px;
+    padding: 13px;
+    cursor: pointer;
+    transition: opacity .15s;
+    margin: 0 18px; width: calc(100% - 36px);
+  }
+  .btn-save:active { opacity: .85; }
+
+  /* ── PLATFORM COLORS ── */
+  .pf-PS2    { background: rgba(0,64,166,.2);  color: #4d9fff; border: 1px solid rgba(77,159,255,.3); }
+  .pf-PS3    { background: rgba(0,64,166,.2);  color: #4d9fff; border: 1px solid rgba(77,159,255,.3); }
+  .pf-PS4    { background: rgba(0,55,145,.25); color: #6db3ff; border: 1px solid rgba(109,179,255,.3); }
+  .pf-PS5    { background: rgba(0,100,200,.25);color: #80c8ff; border: 1px solid rgba(128,200,255,.3); }
+  .pf-XBOX360{ background: rgba(16,124,16,.2); color: #5ccc5c; border: 1px solid rgba(92,204,92,.3); }
+  .pf-XBOXONE{ background: rgba(16,124,16,.25);color: #70d970; border: 1px solid rgba(112,217,112,.3); }
+  .pf-XBOXS  { background: rgba(0,150,0,.2);   color: #7fe07f; border: 1px solid rgba(127,224,127,.3); }
+  .pf-PC     { background: rgba(100,100,200,.2);color: #b0b0ff; border: 1px solid rgba(176,176,255,.3); }
+  .pf-DEFAULT{ background: rgba(100,100,100,.2);color: #aaa; border: 1px solid rgba(170,170,170,.2); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── SECTION HEADER ── */
+  .section-sep {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700; font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 6px 2px 2px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">GAME<span>VAULT</span></div>
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="search" type="search" placeholder="Buscar juego..." autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+  </div>
+  <div class="platform-scroll" id="pf-filters"></div>
+  <div class="stats-bar" id="stats-bar"></div>
+  <div class="filter-row">
+    <select class="filter-select" id="filter-status">
+      <option value="">Todos los estados</option>
+      <option value="SI">Finalizados</option>
+      <option value="NO">Pendientes</option>
+      <option value="">Sin marcar</option>
+    </select>
+    <select class="filter-select" id="filter-sort">
+      <option value="az">A → Z</option>
+      <option value="za">Z → A</option>
+      <option value="score">Mejor puntuación</option>
+    </select>
+    <button class="btn-add" id="btn-add" title="Añadir juego">＋</button>
+  </div>
+</header>
+
+<div id="game-list"></div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" id="modal">
+    <div class="modal-handle"><div></div></div>
+    <div class="modal-header">
+      <div class="modal-platform platform-badge" id="m-platform"></div>
+      <div class="modal-title" id="m-title"></div>
+      <div class="modal-edition" id="m-edition"></div>
+    </div>
+    <div class="modal-body" id="m-body"></div>
+    <div class="modal-footer">
+      <button class="btn-close-modal" id="btn-close-modal">Cerrar</button>
+      <button class="btn-delete" id="btn-delete">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-bg" id="add-modal-bg">
+  <div class="add-modal">
+    <div class="modal-handle"><div></div></div>
+    <h2>➕ Añadir juego</h2>
+    <div class="form-body">
+      <div class="form-group">
+        <label>Título *</label>
+        <input class="form-input" id="f-nombre" type="text" placeholder="Nombre del juego">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Plataforma *</label>
+          <select class="form-select" id="f-plataforma">
+            <option value="">Seleccionar...</option>
+            <option>PS2</option><option>PS3</option><option>PS4</option><option>PS5</option>
+            <option>XBOX 360</option><option>XBOX ONE</option><option>XBOX SERIES</option>
+            <option>NINTENDO SWITCH</option><option>NINTENDO WII</option>
+            <option>NINTENDO 3DS</option><option>NINTENDO DS</option>
+            <option>PSONE</option><option>XBOX ORIGINAL</option><option>JUEGOS PC FISICOS</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Estado</label>
+          <select class="form-select" id="f-finalizado">
+            <option value="">—</option>
+            <option value="SI">Finalizado</option>
+            <option value="NO">Pendiente</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Edición</label>
+          <input class="form-input" id="f-edicion" type="text" placeholder="Opcional">
+        </div>
+        <div class="form-group">
+          <label>Región</label>
+          <input class="form-input" id="f-region" type="text" placeholder="PAL / NTSC...">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Puntuación</label>
+          <input class="form-input" id="f-puntuacion" type="number" min="0" max="100" placeholder="0-100">
+        </div>
+        <div class="form-group">
+          <label>Género</label>
+          <input class="form-input" id="f-genero" type="text" placeholder="Acción, RPG...">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Observaciones</label>
+        <textarea class="form-textarea" id="f-observaciones" placeholder="Notas, estado del disco..."></textarea>
+      </div>
+    </div>
+    <button class="btn-save" id="btn-save">Guardar juego</button>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+const SEED = [{"uid":1,"nombre":"187 Ride or Die","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":2,"nombre":"1945 I & II: The Arcade Games","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":3,"nombre":"Action Man A.T.O.M.: Alpha Teens on Machines","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":4,"nombre":"Battlefield 2: Modern Combat","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":5,"nombre":"Call of Duty 2: Big Red One","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":6,"nombre":"Call of Duty: World at War – Final Fronts","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":7,"nombre":"Catwoman","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":8,"nombre":"Champions of Norrath","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":9,"nombre":"Circuit Blasters","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":10,"nombre":"Clock Tower 3","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":11,"nombre":"Commandos 2: Men of Courage","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":12,"nombre":"Conflict: Global Storm","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":13,"nombre":"Deadly Skies III","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":14,"nombre":"Delta Force: Black Hawk Down","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":15,"nombre":"Desde Rusia con Amor","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":16,"nombre":"Dog's Life","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":17,"nombre":"Donkey Xote","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":18,"nombre":"Dragon Ball Z: Budokai Tenkaichi 2","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":19,"nombre":"Dragon Quest: El Periplo del Rey Maldito","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":20,"nombre":"Driver Parallel Lines","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":21,"nombre":"El Código Da Vinci","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":22,"nombre":"El Padrino","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":23,"nombre":"El Señor de los Anillos: El Retorno del Rey","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":24,"nombre":"El Señor de los Anillos: La Tercera Edad","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":25,"nombre":"Enter the Matrix","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":26,"nombre":"Eragon","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":27,"nombre":"Extermination","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":28,"nombre":"FIFA 08","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":29,"nombre":"Free Running","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":30,"nombre":"Freedom Fighters","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":31,"nombre":"Full Spectrum Warrior","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":32,"nombre":"Ghost Recon Jungle Storm","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":33,"nombre":"Ghost Rider","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":34,"nombre":"Ghosthunter","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":35,"nombre":"Gladiator: Sword of Vengeance","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":36,"nombre":"God of War","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":37,"nombre":"God of War II","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":38,"nombre":"Gran Turismo 4","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":39,"nombre":"Grand Prix Challenge","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":40,"nombre":"Grand Theft Auto: San Andreas","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":41,"nombre":"Hunter: The Reckoning Wayward","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":42,"nombre":"ICO","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":43,"nombre":"James Bond 007: Agent Under Fire","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":44,"nombre":"James Bond 007: Nightfire","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":45,"nombre":"Las Crónicas de Narnia I","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":46,"nombre":"Mafia","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":47,"nombre":"Marvel Super Hero Squad","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":48,"nombre":"Medal of Honor European Assault","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":49,"nombre":"Medal of Honor Frontline","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":50,"nombre":"Medal of Honor Vanguard","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":51,"nombre":"Mercenaries","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":52,"nombre":"Metal Gear Solid 2: Sons of Liberty","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":53,"nombre":"Metal Gear Solid 3: Snake Eater","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":54,"nombre":"Minority Report","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":55,"nombre":"MotoGP 3","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":56,"nombre":"Motorbike King","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":57,"nombre":"MTX Mototrax","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":58,"nombre":"Need for Speed: Underground 2","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":59,"nombre":"Onimusha 3","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":60,"nombre":"Peter Jackson's King Kong","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":61,"nombre":"Pilot Down: Behind Enemy Lines","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":62,"nombre":"Primal","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":63,"nombre":"Psi-Ops: The Mindgate Conspiracy","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":64,"nombre":"Realm of the Dead","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":65,"nombre":"RedCard","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":66,"nombre":"Return to Castle Wolfenstein: Operation Resurrection","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":67,"nombre":"RPM Tuning","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":68,"nombre":"Shadow of the Colossus","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":69,"nombre":"Smash Court Tennis Pro Tournament 2","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":70,"nombre":"Spartan: Total Warrior","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":71,"nombre":"Star Wars Battlefront II","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":72,"nombre":"Star Wars Episode III: La Venganza de los Sith","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":73,"nombre":"Stolen","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":74,"nombre":"Stuntman","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":75,"nombre":"Summoner","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":76,"nombre":"Terminator 3: The Redemption","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":77,"nombre":"The Hulk","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":78,"nombre":"The Mark of Kri","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":79,"nombre":"The Simpsons Hit & Run","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":80,"nombre":"The Terminator: Dawn of Fate","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":81,"nombre":"TimeSplitters II Future Perfect","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":82,"nombre":"Tom Clancy's Ghost Recon 2","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":83,"nombre":"Tom Clancy's Splinter Cell","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":84,"nombre":"Tom Clancy's Splinter Cell Chaos Theory","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":85,"nombre":"Tom Clancy's Splinter Cell Pandora Tomorrow","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":86,"nombre":"Transformers","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":87,"nombre":"True Crime: Streets of LA","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":88,"nombre":"Turok: Evolution","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":89,"nombre":"Ultimate Spider-Man","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":90,"nombre":"Van Helsing","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":91,"nombre":"V-Rally 3","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":92,"nombre":"Warhammer 40,000: Fire Warrior","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":93,"nombre":"WWII Soldier","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":94,"nombre":"Yu-Gi-Oh! The Duelists of the Roses","plataforma":"PS2","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":95,"nombre":"007 - Bloodstone","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":"Sin manual"},{"uid":96,"nombre":"007 - Quantum of Solace","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":97,"nombre":"Alien VS Predator","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":98,"nombre":"Army of Two","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":99,"nombre":"Army of Two 40th Day","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":100,"nombre":"Army of Two III - The Devil's Cartel","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":101,"nombre":"Backbreaker","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":102,"nombre":"Batman Arkham Asylum","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":103,"nombre":"Batman Arkham City","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":104,"nombre":"Batman Arkham Origins","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":105,"nombre":"Battlefield 3","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":106,"nombre":"Battleship","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":107,"nombre":"Beowulf: The Game","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":108,"nombre":"Bionic Commando","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":109,"nombre":"Bioshock Infinite","plataforma":"PS3","genero":"","edicion":"Complete Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":110,"nombre":"Blacksite","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Sin manual"},{"uid":111,"nombre":"Bleach: Soul Resurrección","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":112,"nombre":"Bob Esponja: LaVenganza Plankton","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Versión prensa (haccer caratula)"},{"uid":113,"nombre":"Bodycount","plataforma":"PS3","genero":"","edicion":"","region":"NTSC USA","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":114,"nombre":"Brink","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":115,"nombre":"Brothers in Arms: Hell's Highway","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":116,"nombre":"Brütal Legend","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":117,"nombre":"Call of Duty 3","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":118,"nombre":"Call of Duty: Black Ops II","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":119,"nombre":"Call of Duty: Ghosts","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":120,"nombre":"Call of Duty: Modern Warfare","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":121,"nombre":"Call of Duty: Modern Warfare 3","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":122,"nombre":"Call of Duty: World at War","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":123,"nombre":"Capitán América","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":124,"nombre":"Clive Barker's Jericho","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":125,"nombre":"Crysis 2","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":126,"nombre":"Crysis 3","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":127,"nombre":"Damnation","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":128,"nombre":"Darksiders","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":129,"nombre":"Dead Island","plataforma":"PS3","genero":"","edicion":"GOTY","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":130,"nombre":"Dead Rising 2","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":131,"nombre":"Dead Space","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":132,"nombre":"Dead Space 2","plataforma":"PS3","genero":"","edicion":"Limited","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":133,"nombre":"Dead to Rights Retribution","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":134,"nombre":"Deus Ex Human Revolution","plataforma":"PS3","genero":"","edicion":"Augmented Edition","region":"","valor":"","puntuacion":"92","finalizado":"SI","observaciones":"Pasado en PC"},{"uid":135,"nombre":"Dragon Age II","plataforma":"PS3","genero":"","edicion":"Signature Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":136,"nombre":"Dragon Ball Raging Blast","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":137,"nombre":"Dungeon Siege III","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":138,"nombre":"Eat Lead: The Return of Matt Hazard","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":139,"nombre":"El Gato con Botas","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":140,"nombre":"El Señor de los Anillos: La Guerra del Norte","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":141,"nombre":"El Shaddai: Ascension of the Metatron","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":142,"nombre":"F.E.A.R 2: Project Origin","plataforma":"PS3","genero":"","edicion":"","region":"NTSC USA","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":143,"nombre":"Fallout 3","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":144,"nombre":"FIFA 10","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":145,"nombre":"FIFA Street","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":146,"nombre":"Fight Night Champion","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Sin manual"},{"uid":147,"nombre":"Formula One: Championship Edition","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":148,"nombre":"Fracture","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":149,"nombre":"Furia de Titanes","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":150,"nombre":"Fuse","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":151,"nombre":"God of War Ascension","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":152,"nombre":"God of War Collection I","plataforma":"PS3","genero":"","edicion":"Essentials","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":153,"nombre":"God of War Collection II","plataforma":"PS3","genero":"","edicion":"Essentials","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":154,"nombre":"God of War III","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":155,"nombre":"God of War III","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Caratula oscura"},{"uid":156,"nombre":"Goldeneye 007: Reloaded","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":157,"nombre":"Gran Turismo 5","plataforma":"PS3","genero":"","edicion":"Platinum","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":158,"nombre":"Grand Theft Auto IV","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":159,"nombre":"Haze","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":160,"nombre":"Heavenly Sword","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":161,"nombre":"inFamous","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":162,"nombre":"inFamous 2","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":163,"nombre":"IronMan","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":164,"nombre":"IronMan 2","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":165,"nombre":"James Cameron's AVATAR: El Videojuego","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":166,"nombre":"Juego de Tronos","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Sin manual"},{"uid":167,"nombre":"Juiced 2","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":168,"nombre":"Killzone 2","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":169,"nombre":"Killzone 3","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":170,"nombre":"La Leyenda de Spyro: La fuerza del Dragón","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":171,"nombre":"Lair","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":172,"nombre":"LEGO Batman 2","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":173,"nombre":"LEGO Batman El Videojuego","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":174,"nombre":"LEGO El Señor de los Anillos","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":175,"nombre":"LEGO Star Wars III The Clone Wars","plataforma":"PS3","genero":"","edicion":"","region":"NTSC USA","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":176,"nombre":"Little Big Planet","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":177,"nombre":"Little Big Planet 2","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":178,"nombre":"Lost Planet","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":179,"nombre":"Lost Planet 2","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":180,"nombre":"Lost Planet 3","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":181,"nombre":"MARVEL Ultimate Alliance","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":182,"nombre":"MARVEL Ultimate Alliance 2","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":183,"nombre":"Medal of Honor","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":184,"nombre":"Medal of Honor Airborne","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":185,"nombre":"Medal of Honor Warfighter","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":186,"nombre":"Mercenaries 2: World in Flames","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":187,"nombre":"Metal Gear Solid 4 Guns of the Patriots","plataforma":"PS3","genero":"","edicion":"","region":"NTSC JAP","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":188,"nombre":"Metal Gear Solid 4 Guns of the Patriots","plataforma":"PS3","genero":"","edicion":"","region":"PAL ES","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":189,"nombre":"Metal Gear Solid HD Collection","plataforma":"PS3","genero":"","edicion":"","region":"NTSC USA","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":190,"nombre":"Metal Gear Solid Rising Revengeance","plataforma":"PS3","genero":"","edicion":"","region":"PAL FR","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":191,"nombre":"MIB: Alien Crisis (Men in Black)","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":192,"nombre":"MindJack","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":193,"nombre":"Mortal Kombat (9)","plataforma":"PS3","genero":"","edicion":"Normal","region":"","valor":"","puntuacion":"84","finalizado":"SI","observaciones":"Pillar la Komplete cuando se presente"},{"uid":194,"nombre":"MotoGP 09-10","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":195,"nombre":"MotoGP 10-11","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":196,"nombre":"MotorStorm","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":197,"nombre":"Naruto Ultimate Ninja Storm 3 Full Burst","plataforma":"PS3","genero":"","edicion":"","region":"PAL ITA","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":198,"nombre":"Naughty Bear","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":199,"nombre":"Need for Speed The Run","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":200,"nombre":"NeverDead","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":201,"nombre":"One Piece: Pirate Warriors 1 & 2","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":202,"nombre":"Overlord II","plataforma":"PS3","genero":"","edicion":"","region":"PAL UK","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":203,"nombre":"Overlord: Raising Hell","plataforma":"PS3","genero":"","edicion":"","region":"PAL ES","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":204,"nombre":"PayDay 2","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":205,"nombre":"PES 2008","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":206,"nombre":"PES 2010","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":207,"nombre":"Prototype","plataforma":"PS3","genero":"","edicion":"Platinum","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":208,"nombre":"Prototype 2","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":209,"nombre":"Pure","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":210,"nombre":"Pure Football","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":211,"nombre":"Quantum Theory","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":212,"nombre":"Rage","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Comprado por Manu"},{"uid":213,"nombre":"Rango","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":214,"nombre":"Red Dead Redemption","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":215,"nombre":"Red Dead Redemption","plataforma":"PS3","genero":"","edicion":"GOTY","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":216,"nombre":"Red Faction Armageddon","plataforma":"PS3","genero":"","edicion":"Ed. Comando y Reconocimiento","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":217,"nombre":"Resident Evil 5","plataforma":"PS3","genero":"","edicion":"Platinum","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":218,"nombre":"Resident Evil 5","plataforma":"PS3","genero":"","edicion":"Gold Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":219,"nombre":"Resident Evil 6","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":220,"nombre":"Resident Evil: Operation Raccoon City","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":221,"nombre":"Resistance","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":222,"nombre":"Resistance 2","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Cambiar Carátula por PAL ES"},{"uid":223,"nombre":"Resistance 3","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":224,"nombre":"Ridge Racer 7","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":225,"nombre":"SBK 09: Superbike World Championship","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":226,"nombre":"Silent Hill HD Collection","plataforma":"PS3","genero":"","edicion":"","region":"NTSC USA","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":227,"nombre":"Silent Hill: Homecoming","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":228,"nombre":"SingStar Vol. 3","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":229,"nombre":"SOCOM: Special Forces","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":230,"nombre":"Soldier of Fortune Payback","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":231,"nombre":"Spiderman 3","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":232,"nombre":"Spiderman: Web of Shadows","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":233,"nombre":"Splatterhouse","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":234,"nombre":"Sports Champions","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":235,"nombre":"Sports Champions 2","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":236,"nombre":"Star Wars El Poder de la Fuerza","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":237,"nombre":"Star Wars The Clone Wars: Heroes de la República","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":238,"nombre":"StormRise","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":239,"nombre":"Terminator: Salvation","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":240,"nombre":"The Bureau: XCOM Declassified","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":241,"nombre":"The Darkness","plataforma":"PS3","genero":"","edicion":"","region":"NTSC USA","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":242,"nombre":"The Orange Box","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":243,"nombre":"Thor","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":244,"nombre":"Time Crisis 4","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":245,"nombre":"Time Crisis: Razing Storm","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":246,"nombre":"Tom Clancy's Ghost Recon Future Soldier","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":247,"nombre":"Tom Clancy's Rainbow Six Siege","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":248,"nombre":"Tom Clancy's Rainbow Six Siege 2","plataforma":"PS3","genero":"","edicion":"Platinum","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":249,"nombre":"Tom Clancy's Splinter Cell Trilogy","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":250,"nombre":"Tomb Raider: Underworld","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":251,"nombre":"Toy Story 3","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":252,"nombre":"Transformers: El Lado Oscuro de la Luna","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":253,"nombre":"Transformers: La Caída de Cybertron","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":254,"nombre":"Transformers: La Guerra por Cybertron","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Carátula dañada"},{"uid":255,"nombre":"Transformers: La Venganza de los Caídos","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":256,"nombre":"Transformers: The Game","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":257,"nombre":"Tron: Evolution","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":258,"nombre":"Turning Point: Fall of Liberty","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":259,"nombre":"uDraw Studio","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":260,"nombre":"Uncharted 2: El Reino de los Ladrones","plataforma":"PS3","genero":"","edicion":"Platinum","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":261,"nombre":"Uncharted 3: La Traición de Drake","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":262,"nombre":"Unreal Tournament III","plataforma":"PS3","genero":"","edicion":"","region":"NTSC USA","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":263,"nombre":"Untold Legends: Dark Kingdom","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":264,"nombre":"Vanquish","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":265,"nombre":"Viking: Battle for Asgard","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":266,"nombre":"Virtua Fighter 5","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":267,"nombre":"Warhammer 40.000: Space Marine","plataforma":"PS3","genero":"","edicion":"Elite Armour","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":268,"nombre":"Warriors: Legends of Troy","plataforma":"PS3","genero":"","edicion":"","region":"NTSC USA","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":269,"nombre":"Wolfenstein (2009)","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":270,"nombre":"Zone of the Enders HD Collection","plataforma":"PS3","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":271,"nombre":"Life is Strange True Colors","plataforma":"PS4","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":272,"nombre":"Black Clover: Quartet Knights","plataforma":"PS4","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":273,"nombre":"A Plague Tale: Innocence","plataforma":"PS5","genero":"Acción-Sigilo","edicion":"","region":"","valor":"","puntuacion":"80.0","finalizado":"SI","observaciones":""},{"uid":274,"nombre":"A Quiet Place: The Road Ahead","plataforma":"PS5","genero":"Miedo","edicion":"","region":"","valor":"","puntuacion":"79.0","finalizado":"SI","observaciones":""},{"uid":275,"nombre":"Ad Infinitum","plataforma":"PS5","genero":"Miedo","edicion":"","region":"","valor":"","puntuacion":"71.0","finalizado":"SI","observaciones":""},{"uid":276,"nombre":"Alone in the Dark","plataforma":"PS5","genero":"Acción-Terror","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":277,"nombre":"Animal Hospital","plataforma":"PS5","genero":"Gestión","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":278,"nombre":"Apsulov End of Gods","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":279,"nombre":"Aragami 2","plataforma":"PS5","genero":"Acción-Sigilo","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":280,"nombre":"Assassin's Creed Mirage","plataforma":"PS5","genero":"Aventura-Acción","edicion":"Launch Edition","region":"","valor":"","puntuacion":"82.0","finalizado":"SI","observaciones":"Han sacado más contenido"},{"uid":281,"nombre":"Asterix & Obelix Maxi Collection","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":282,"nombre":"Back 4 Blood","plataforma":"PS5","genero":"","edicion":"Special Edition","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":"Disco de PS4"},{"uid":283,"nombre":"Balan Wonderworld","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":284,"nombre":"Black Myth Wukong","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":285,"nombre":"Blades of Fire","plataforma":"PS5","genero":"","edicion":"Day One Edition","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":286,"nombre":"Blasphemous II","plataforma":"PS5","genero":"Metroidvania","edicion":"","region":"","valor":"","puntuacion":"86.0","finalizado":"SI","observaciones":"Pasado sin DLCs"},{"uid":287,"nombre":"Blood Bowl 3","plataforma":"PS5","genero":"Deporte-Estrategia","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":288,"nombre":"Breathedge","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":289,"nombre":"Call of Duty Vanguard","plataforma":"PS5","genero":"FPS","edicion":"","region":"","valor":"","puntuacion":"68.0","finalizado":"SI","observaciones":""},{"uid":290,"nombre":"Call of the Sea","plataforma":"PS5","genero":"Aventura-Puzzle","edicion":"Norah's Diary Edition","region":"","valor":"","puntuacion":"79.0","finalizado":"SI","observaciones":""},{"uid":291,"nombre":"Conscript","plataforma":"PS5","genero":"Acción-Terror","edicion":"Deluxe Edition","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":292,"nombre":"Crisis Core - Final Fantasy VII - Reunion","plataforma":"PS5","genero":"Turnos JRPG","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":293,"nombre":"Daymare: 1994 Sandcastle","plataforma":"PS5","genero":"Acción-Terror","edicion":"","region":"","valor":"","puntuacion":"59.0","finalizado":"SI","observaciones":"Mucho peor que el primero"},{"uid":294,"nombre":"Dead Space [ REMAKE ]","plataforma":"PS5","genero":"Acción-Terror","edicion":"","region":"","valor":"","puntuacion":"85.0","finalizado":"SI","observaciones":"Pasado en PC"},{"uid":295,"nombre":"Death Stranding Director's Cut","plataforma":"PS5","genero":"KOJIMADA","edicion":"Enhanced Edition","region":"","valor":"","puntuacion":"94.0","finalizado":"SI","observaciones":"Pasado en PC, versión normal"},{"uid":296,"nombre":"Deathloop","plataforma":"PS5","genero":"FPS-RPG","edicion":"","region":"","valor":"","puntuacion":"89.0","finalizado":"SI","observaciones":"Pasado en PC"},{"uid":297,"nombre":"Demon's Souls","plataforma":"PS5","genero":"Soulslike","edicion":"","region":"","valor":"","puntuacion":"92.0","finalizado":"SI","observaciones":""},{"uid":298,"nombre":"Devil May Cry 5","plataforma":"PS5","genero":"Hack & Slash","edicion":"Special Edition","region":"","valor":"","puntuacion":"92.0","finalizado":"SI","observaciones":""},{"uid":299,"nombre":"Dragon Age: Veilguard","plataforma":"PS5","genero":"ARPG","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":300,"nombre":"Dragon Ball Z: Kakarot","plataforma":"PS5","genero":"ARPG Peleas","edicion":"","region":"","valor":"","puntuacion":"84.0","finalizado":"SI","observaciones":"Falta DLC Daima"},{"uid":301,"nombre":"Empire of the Ants","plataforma":"PS5","genero":"","edicion":"Limited Edition","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":302,"nombre":"Endless Dungeon","plataforma":"PS5","genero":"","edicion":"Day One Edition","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":303,"nombre":"Evil Inside","plataforma":"PS5","genero":"Miedo","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":304,"nombre":"Evil West","plataforma":"PS5","genero":"Acción","edicion":"","region":"","valor":"","puntuacion":"80.0","finalizado":"SI","observaciones":""},{"uid":305,"nombre":"Final Fantasy VII Remake Intergrade","plataforma":"PS5","genero":"ARPG","edicion":"","region":"","valor":"","puntuacion":"83.0","finalizado":"SI","observaciones":""},{"uid":306,"nombre":"Forspoken","plataforma":"PS5","genero":"Acción-Aventura","edicion":"","region":"","valor":"","puntuacion":"72.0","finalizado":"SI","observaciones":""},{"uid":307,"nombre":"Gangs of Sherwood","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":308,"nombre":"Ghost of Tsushima","plataforma":"PS5","genero":"Aventura-Acción","edicion":"","region":"","valor":"","puntuacion":"92.0","finalizado":"SI","observaciones":""},{"uid":309,"nombre":"Ghostwire Tokyo","plataforma":"PS5","genero":"Acción-Terror","edicion":"","region":"","valor":"","puntuacion":"80.0","finalizado":"SI","observaciones":""},{"uid":310,"nombre":"God of War Ragnarok","plataforma":"PS5","genero":"ARPG","edicion":"","region":"","valor":"","puntuacion":"95.0","finalizado":"SI","observaciones":""},{"uid":311,"nombre":"GodFall","plataforma":"PS5","genero":"Looter-H&Slash","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":312,"nombre":"Gran Turismo 7","plataforma":"PS5","genero":"Carreras","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":313,"nombre":"Grand Theft Auto V","plataforma":"PS5","genero":"Acción-Aventura","edicion":"","region":"","valor":"","puntuacion":"77.0","finalizado":"SI","observaciones":"Pasado en PS3"},{"uid":314,"nombre":"Greedfall","plataforma":"PS5","genero":"","edicion":"Gold Edition","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":315,"nombre":"Gungrave G.O.R.E","plataforma":"PS5","genero":"Acción","edicion":"Day One Edition","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":"Sin terminar"},{"uid":316,"nombre":"Harry Potter: Campeones de Quidditch","plataforma":"PS5","genero":"Deporte","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Solo Online"},{"uid":317,"nombre":"High on Life","plataforma":"PS5","genero":"Acción","edicion":"","region":"PAL UK","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":318,"nombre":"Hitman World of Assassination","plataforma":"PS5","genero":"Acción-Estrategia","edicion":"Completa","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":"Solo pasado parte 1"},{"uid":319,"nombre":"Hogwarts Legacy","plataforma":"PS5","genero":"RPG","edicion":"","region":"","valor":"","puntuacion":"80.0","finalizado":"SI","observaciones":""},{"uid":320,"nombre":"Horizon Forbidden West","plataforma":"PS5","genero":"Aventura-Acción","edicion":"Deluxe","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":"SIN DLCs"},{"uid":321,"nombre":"Horizon Zero Dawn Remaster","plataforma":"PS5","genero":"Aventura-Acción","edicion":"","region":"","valor":"","puntuacion":"89.0","finalizado":"SI","observaciones":"Pasado en PS4"},{"uid":322,"nombre":"Hot Wheels Unleashed 2 - Turbopcharged","plataforma":"PS5","genero":"Carreras","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":323,"nombre":"IKAI","plataforma":"PS5","genero":"Miedo","edicion":"","region":"","valor":"","puntuacion":"69.0","finalizado":"SI","observaciones":""},{"uid":324,"nombre":"Immortals of Aveum","plataforma":"PS5","genero":"FPS-RPG","edicion":"","region":"","valor":"","puntuacion":"80.0","finalizado":"SI","observaciones":""},{"uid":325,"nombre":"Imsomnis","plataforma":"PS5","genero":"","edicion":"Enhanced Edition","region":"PAL ES","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":326,"nombre":"Inertial Drift: Twilight Rivals Edition","plataforma":"PS5","genero":"Carreras","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":327,"nombre":"Judgement","plataforma":"PS5","genero":"ARPG","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":328,"nombre":"Kena Bridge of Spirits","plataforma":"PS5","genero":"Acción-Aventura","edicion":"Deluxe Edition","region":"","valor":"","puntuacion":"75.0","finalizado":"SI","observaciones":""},{"uid":329,"nombre":"Kitaria Fables","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":330,"nombre":"Kong: Survivor Instinct","plataforma":"PS5","genero":"","edicion":"Titans Edition","region":"PAL ES","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":331,"nombre":"Lawn Mowing Simulator","plataforma":"PS5","genero":"Simulador","edicion":"Landmark Edition","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":332,"nombre":"LEGO Horizon Adventures","plataforma":"PS5","genero":"LEGO","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":333,"nombre":"Lies of P","plataforma":"PS5","genero":"Soulslike","edicion":"","region":"","valor":"","puntuacion":"86.0","finalizado":"SI","observaciones":"Pasado en PC (sin DLC)"},{"uid":334,"nombre":"Like a Dragon: Ishin","plataforma":"PS5","genero":"ARPG","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":335,"nombre":"Lost Judgement","plataforma":"PS5","genero":"ARPG","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":336,"nombre":"MADISON","plataforma":"PS5","genero":"Miedo","edicion":"","region":"","valor":"","puntuacion":"94.0","finalizado":"SI","observaciones":"Pasado en PC"},{"uid":337,"nombre":"MADISON VR","plataforma":"PS5","genero":"Miedo","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":"Pasado versión normal en PC"},{"uid":338,"nombre":"Metal Gear Solid 3 Snake Eater - DELTA","plataforma":"PS5","genero":"KOJIMADA","edicion":"Deluxe Edition","region":"","valor":"","puntuacion":"100.0","finalizado":"SI","observaciones":""},{"uid":339,"nombre":"Metal Gear Solid Master Collection Vol.1","plataforma":"PS5","genero":"KOJIMADA","edicion":"","region":"","valor":"","puntuacion":"97.0","finalizado":"SI","observaciones":""},{"uid":340,"nombre":"Metaphor: Refantazio","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":341,"nombre":"Midnight Suns","plataforma":"PS5","genero":"Estrategia Turnos","edicion":"Enhanced Edition","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":342,"nombre":"Minecraft Legends","plataforma":"PS5","genero":"","edicion":"Deluxe Edition","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":343,"nombre":"Mortal Shell: Enhanced Edition","plataforma":"PS5","genero":"Soulslike","edicion":"","region":"","valor":"","puntuacion":"71.0","finalizado":"SI","observaciones":""},{"uid":344,"nombre":"NBA 2K21","plataforma":"PS5","genero":"Deporte","edicion":"Kobe Steelbook","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":345,"nombre":"NBA 2K21","plataforma":"PS5","genero":"Deporte","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":346,"nombre":"Oddworld Soulstorm","plataforma":"PS5","genero":"Aventura-Puzzle","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":347,"nombre":"Outer Wilds","plataforma":"PS5","genero":"Aventura","edicion":"","region":"","valor":"","puntuacion":"98.0","finalizado":"SI","observaciones":"Pasado en PC sin DLC"},{"uid":348,"nombre":"OVRDARK","plataforma":"PS5","genero":"Acción-Terror","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":"VR"},{"uid":349,"nombre":"Oxide Room 104","plataforma":"PS5","genero":"Miedo","edicion":"","region":"","valor":"","puntuacion":"62.0","finalizado":"SI","observaciones":""},{"uid":350,"nombre":"Prince of Persia: The Lost Crown","plataforma":"PS5","genero":"Metroidvania","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":351,"nombre":"Prodeus","plataforma":"PS5","genero":"Boomer Shooter","edicion":"","region":"","valor":"","puntuacion":"81.0","finalizado":"SI","observaciones":"Pasado en PC"},{"uid":352,"nombre":"Ratchet & Clank: Una dimensión Aparte","plataforma":"PS5","genero":"Acción-Aventura","edicion":"","region":"","valor":"","puntuacion":"82.0","finalizado":"SI","observaciones":""},{"uid":353,"nombre":"Redemption Reapers","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":354,"nombre":"Resident Evil 4","plataforma":"PS5","genero":"Acción-Terror","edicion":"Normal","region":"PAL UK","valor":"","puntuacion":"94.0","finalizado":"SI","observaciones":"Pasado en PC (sin DLCs)"},{"uid":355,"nombre":"Resident Evil VIII \"Village\"","plataforma":"PS5","genero":"Acción-Terror","edicion":"Special Edition","region":"","valor":"","puntuacion":"89.0","finalizado":"SI","observaciones":"Pasado en PC (sin DLCs)"},{"uid":356,"nombre":"RetroRealms: Halloween & Ash vs Evil Dead","plataforma":"PS5","genero":"Beat'em UP","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":357,"nombre":"Rise of the Ronin","plataforma":"PS5","genero":"ARPG","edicion":"","region":"","valor":"","puntuacion":"74.0","finalizado":"SI","observaciones":""},{"uid":358,"nombre":"Robocop: Rogue City","plataforma":"PS5","genero":"Acción","edicion":"","region":"","valor":"","puntuacion":"79.0","finalizado":"SI","observaciones":"Pasado en PC"},{"uid":359,"nombre":"Rugrats Adventures in Gameland","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":360,"nombre":"Sackboy: Una Aventura a lo Grande","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":361,"nombre":"Saints Row","plataforma":"PS5","genero":"Acción-Aventura","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":362,"nombre":"SandLand","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":"También en PC (Coleccionista)"},{"uid":363,"nombre":"Scarlet Nexus","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":364,"nombre":"Sea of Stars","plataforma":"PS5","genero":"Turnos JRPG","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":365,"nombre":"Session: Skate Sim","plataforma":"PS5","genero":"Deporte","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":366,"nombre":"SIFU","plataforma":"PS5","genero":"","edicion":"Vengeance Edition","region":"","valor":"","puntuacion":"82.0","finalizado":"SI","observaciones":""},{"uid":367,"nombre":"SONIC Superstars","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":368,"nombre":"Soulstice","plataforma":"PS5","genero":"","edicion":"Deluxe Edition","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":369,"nombre":"Spells & Secrets","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":370,"nombre":"Spider-Man Miles Morales","plataforma":"PS5","genero":"Acción-Aventura","edicion":"","region":"","valor":"","puntuacion":"87.0","finalizado":"SI","observaciones":"Incluye Spider-Man Remaster (Digital)"},{"uid":371,"nombre":"Split Fiction","plataforma":"PS5","genero":"Coop","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":372,"nombre":"Star Ocean The Divine Force","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":373,"nombre":"Star Ocean The Second Story R","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":374,"nombre":"Star Trek Prodigy: Supernova","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":375,"nombre":"STAR WARS Jedi Fallen Order","plataforma":"PS5","genero":"ARPG","edicion":"","region":"","valor":"","puntuacion":"80.0","finalizado":"SI","observaciones":"Pasado en PC"},{"uid":376,"nombre":"Steelrising","plataforma":"PS5","genero":"Soulslike","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":377,"nombre":"STRAY","plataforma":"PS5","genero":"Aventura","edicion":"","region":"","valor":"","puntuacion":"79.0","finalizado":"SI","observaciones":""},{"uid":378,"nombre":"Tails of Iron","plataforma":"PS5","genero":"Metroidvania","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":379,"nombre":"Tales of Arise","plataforma":"PS5","genero":"ARPG","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":380,"nombre":"Tekken 8","plataforma":"PS5","genero":"Peleas","edicion":"Coleccionista","region":"","valor":"","puntuacion":"79.0","finalizado":"SI","observaciones":""},{"uid":381,"nombre":"The Ascent","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":382,"nombre":"The Callisto Protocol","plataforma":"PS5","genero":"Acción-Terror","edicion":"","region":"","valor":"","puntuacion":"83.0","finalizado":"SI","observaciones":""},{"uid":383,"nombre":"The Elder Scrolls IV: Oblivion Remastered","plataforma":"PS5","genero":"ARPG","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":384,"nombre":"The Falconeer: Warrior Edition","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":385,"nombre":"The Last of Us Parte I","plataforma":"PS5","genero":"Acción-Aventura","edicion":"","region":"","valor":"","puntuacion":"94.0","finalizado":"SI","observaciones":"Pasado en PS4"},{"uid":386,"nombre":"The Thing Remastered","plataforma":"PS5","genero":"Acción-Terror","edicion":"","region":"","valor":"","puntuacion":"76.0","finalizado":"SI","observaciones":""},{"uid":387,"nombre":"Uncharted Colección Legado de los ladrones","plataforma":"PS5","genero":"Acción-Aventura","edicion":"","region":"","valor":"","puntuacion":"92.0","finalizado":"SI","observaciones":""},{"uid":388,"nombre":"Undisputed","plataforma":"PS5","genero":"Pelea","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":389,"nombre":"Valkyrie Elysium","plataforma":"PS5","genero":"ARPG","edicion":"","region":"PAL UK","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":390,"nombre":"Warhammer 40000 Inquisitor: Martyr","plataforma":"PS5","genero":"ARPG","edicion":"Ultimate Edition","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":391,"nombre":"Warhammer 40000 Space Marine II","plataforma":"PS5","genero":"Acción","edicion":"Edición Especial I","region":"","valor":"","puntuacion":"96.0","finalizado":"SI","observaciones":"Vendido solo disco+funda"},{"uid":392,"nombre":"Warhammer 40000 Space Marine II","plataforma":"PS5","genero":"Acción","edicion":"Edición Especial II","region":"","valor":"","puntuacion":"96.0","finalizado":"SI","observaciones":"Seasons Pass + Disco Actualizado"},{"uid":393,"nombre":"Warhammer: Age of Sigmar - Realms of Ruin","plataforma":"PS5","genero":"Estrategia","edicion":"","region":"PAL UK","valor":"","puntuacion":"84.0","finalizado":"SI","observaciones":""},{"uid":394,"nombre":"Way of the Hunter","plataforma":"PS5","genero":"Simulador","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":395,"nombre":"Weird West","plataforma":"PS5","genero":"","edicion":"Definitive Edition","region":"","valor":"","puntuacion":"","finalizado":"NO","observaciones":""},{"uid":396,"nombre":"WhiteDay: A labyrinth named school","plataforma":"PS5","genero":"Miedo","edicion":"","region":"","valor":"","puntuacion":"58.0","finalizado":"NO","observaciones":"No terminado"},{"uid":397,"nombre":"Wild Hearts","plataforma":"PS5","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":398,"nombre":"Withering Rooms","plataforma":"PS5","genero":"Metroidvania","edicion":"","region":"","valor":"","puntuacion":"80.0","finalizado":"SI","observaciones":""},{"uid":399,"nombre":"WRC Generations","plataforma":"PS5","genero":"Carreras","edicion":"","region":"","valor":"","puntuacion":"83.0","finalizado":"","observaciones":""},{"uid":400,"nombre":"50 Cent: Blood on the Sand","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":401,"nombre":"Ace Combat: Assault Horizon","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":402,"nombre":"Alpha Protocol","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":403,"nombre":"Assassin's Creed","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":404,"nombre":"Assassin's Creed II","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":405,"nombre":"Assassin's Creed La Hermandad","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":406,"nombre":"Assassin's Creed Revelations","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":407,"nombre":"Assassins's Creed III","plataforma":"XBOX 360","genero":"","edicion":"Edición Especial","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":408,"nombre":"Bakugan: Defenders of the Core","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":409,"nombre":"Bioshock 2","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":410,"nombre":"Blacksite","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Sin manual"},{"uid":411,"nombre":"Blackwater","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":412,"nombre":"Bladestorm La Guerra de los Cien Años","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":413,"nombre":"Blitz: The League","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":414,"nombre":"Bully Scholarship Edition","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":415,"nombre":"Call of Duty 2","plataforma":"XBOX 360","genero":"","edicion":"Juego del Año","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":416,"nombre":"Call of Duty World at War","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":417,"nombre":"Call of Duty: Ghosts","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":418,"nombre":"Call of Duty: Modern Warfare","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":419,"nombre":"Call of Duty: Modern Warfare 2","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":420,"nombre":"Call of Duty: Modern Warfare 3","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":421,"nombre":"Call of Juarez Bound in Blood","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":422,"nombre":"Castlevania Lords of Shadow","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":423,"nombre":"Crackdown","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":424,"nombre":"Dante's Inferno","plataforma":"XBOX 360","genero":"","edicion":"","region":"PAL ES","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":425,"nombre":"Dante's Inferno","plataforma":"XBOX 360","genero":"","edicion":"Death Edition","region":"PAL ITA","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":426,"nombre":"Devil May Cry 4","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":427,"nombre":"Divinity II","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":428,"nombre":"Doom 3 BFG Edition","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":429,"nombre":"Dragon Age Origins","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":430,"nombre":"Dragon Age Origins: Awakening","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":431,"nombre":"Dragon Ball Z: Battle of Z","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":432,"nombre":"Duke Nukem Forever","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":433,"nombre":"El Increíble Hulk","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":434,"nombre":"El Padrino II","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":435,"nombre":"El Señor de los Anillos: La Batalla por la Tierra Media II","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":436,"nombre":"El Señor de los Anillos: La Conquista","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":437,"nombre":"F.E.A.R 2: Project Origin","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":438,"nombre":"Fable II","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":439,"nombre":"Fight Night Round 4","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":440,"nombre":"Forza Motorsport 2","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":441,"nombre":"Frontlines: Fuel of War","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":442,"nombre":"Gears of War","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":443,"nombre":"Gears of War 2","plataforma":"XBOX 360","genero":"","edicion":"Classics","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":444,"nombre":"Gears of War 3","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":445,"nombre":"Gears of War: Judgement","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":446,"nombre":"Green Lantern","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":447,"nombre":"Halo 3","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":448,"nombre":"Halo 3 ODST","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":449,"nombre":"Halo 4","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":450,"nombre":"Halo 4","plataforma":"XBOX 360","genero":"","edicion":"GOTY","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":451,"nombre":"Halo Combat Evolved Anniversary","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":452,"nombre":"Hellboy: The Science of Evil","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":453,"nombre":"Kinect Adventures","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":454,"nombre":"Kingdom Under Fire: Circle of Doom","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":455,"nombre":"MX VS ATV Reflex","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":456,"nombre":"N3: Ninety-Nine Nights","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":457,"nombre":"Need for Speed ProStreet","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":458,"nombre":"Ninja Blade","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":459,"nombre":"Outland / From Dust / Beyond Good & Evil HD","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":460,"nombre":"Overlord","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Sin manual"},{"uid":461,"nombre":"Perfect Dark Zero","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":462,"nombre":"Prey","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":463,"nombre":"Prince of Persia","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":464,"nombre":"Prince of Persia: Las Arenas Olvidadas","plataforma":"XBOX 360","genero":"","edicion":"Steelbook","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":465,"nombre":"Pro Evolution Soccer 2009","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":466,"nombre":"Project Gotham Racing 4","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":467,"nombre":"Resident Evil 6","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":468,"nombre":"Rise of Nightmares","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":469,"nombre":"Shellshock 2 Blood Trails","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":470,"nombre":"Sleeping Dogs: Limited Edition","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":471,"nombre":"Spec Ops The Line","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":472,"nombre":"Spiderman: Amigo o enemigo","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":473,"nombre":"Stranglehold","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":474,"nombre":"The Chronicles of Riddick: Assault on Dark Athena","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"PRESTAMO AJBR"},{"uid":475,"nombre":"The Witcher 2: Assassin of Kings Enhanced Edition","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":476,"nombre":"TNA Impact","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":477,"nombre":"Tom Clancy's Ghost Recon Advanced Warfighter","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":478,"nombre":"Tom Clancy's Splinter Cell Conviction","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Sin manual"},{"uid":479,"nombre":"Tom Clancy's Splinter Cell Conviction","plataforma":"XBOX 360","genero":"","edicion":"Exclusive Pre-Order","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":480,"nombre":"Top Spin 4","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":481,"nombre":"Turok","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":482,"nombre":"Wanted Weapons of Fate","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":483,"nombre":"Warhammer Battle March","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":484,"nombre":"Watchmen: El fin está cerca","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":485,"nombre":"WET","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":486,"nombre":"WWE 12","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":487,"nombre":"WWE 13","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":488,"nombre":"WWE 2K14","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":489,"nombre":"WWE Smackdown vs RAW 2008","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":490,"nombre":"WWE Smackdown vs RAW 2009","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":491,"nombre":"X-Men El Videojuego","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":492,"nombre":"X-Men Orígenes: Lobezno","plataforma":"XBOX 360","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Sin manual"},{"uid":493,"nombre":"Anthem","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":494,"nombre":"Assassin's Creed IV: Black Flag","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":495,"nombre":"Assassin's Creed Odyssey","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":496,"nombre":"Assassin's Creed Origins","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":497,"nombre":"Assassin's Creed Unity","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":498,"nombre":"Battlechasers: Nightwar","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":499,"nombre":"Blacksad","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":500,"nombre":"Bladestorm: Nightmare","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":501,"nombre":"Burnout Paradise Remastered","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":502,"nombre":"Call of Duty 4 Modern Warfare Remastered","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":503,"nombre":"Call of Duty Black Ops IIII","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":504,"nombre":"Code Vein","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":505,"nombre":"Control","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":506,"nombre":"Crackdown 3","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":507,"nombre":"Crown Wars: The Black Prince","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Carátula defectuosa por pegatina GAME ( cambiar )"},{"uid":508,"nombre":"Cyberpunk","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":509,"nombre":"DCL Game","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":510,"nombre":"Dead Island Definitive Collection","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":511,"nombre":"Dead or Alive 6","plataforma":"XBOX ONE","genero":"","edicion":"Steelbook Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":512,"nombre":"Dead Rising 3","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":513,"nombre":"deBlob 2","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":514,"nombre":"Deus Ex: Mankind Divided","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":515,"nombre":"Deus Ex: Mankind Divided","plataforma":"XBOX ONE","genero":"","edicion":"Steelbook Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":516,"nombre":"Doom (2016)","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":517,"nombre":"ELEX","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":518,"nombre":"Evolve","plataforma":"XBOX ONE","genero":"","edicion":"Slipcover","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":519,"nombre":"Fade to Silence","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":520,"nombre":"FIFA 22","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":521,"nombre":"Fighter Within","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":522,"nombre":"Final Fantasy Type-0 HD","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":523,"nombre":"GEARS 5","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":524,"nombre":"Gears of War 4","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":525,"nombre":"Gears of War Ultimate Edition","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":526,"nombre":"HALO 5 Guardians","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":527,"nombre":"HALO The Masterchief Collection","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":528,"nombre":"Halo Wars 2","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":529,"nombre":"INSIDE + LIMBO","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":530,"nombre":"Kronos","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":531,"nombre":"Lords of the Fallen","plataforma":"XBOX ONE","genero":"","edicion":"Complete Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":532,"nombre":"Metro Redux (2033 / Last Light)","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":533,"nombre":"Mighty No9","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":534,"nombre":"Monopoly Madness","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":535,"nombre":"MotoGP 19","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":536,"nombre":"Naruto to Boruto: Shinobi Striker","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":537,"nombre":"One Piece: World Seeker","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":538,"nombre":"Past Cure","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":539,"nombre":"Power Rangers: Battle for the Grid","plataforma":"XBOX ONE","genero":"","edicion":"Super Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":540,"nombre":"RIMS Racing","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":541,"nombre":"Rush: A Disney PIXAR Adventure","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":542,"nombre":"Ryse Son of Rome","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":543,"nombre":"Samurai Warriors 5","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":544,"nombre":"Sea of Thieves","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":545,"nombre":"Sekiro Shadows Die Twice","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":546,"nombre":"Shadow Tactics","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":547,"nombre":"Sleeping Dogs","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":548,"nombre":"State of Decay 2","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":549,"nombre":"Super Dungeon Bros","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":550,"nombre":"Teenage Mutant Ninja Turtles: Mutantes en Manhattan","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":551,"nombre":"Tekken 7","plataforma":"XBOX ONE","genero":"","edicion":"Coleccionista","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":552,"nombre":"Tennis World Tour","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":553,"nombre":"The Amazing Spider-Man 2","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":554,"nombre":"The Banner Saga Trilogy: Bonus Edition","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":555,"nombre":"Titan Quest","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":556,"nombre":"Tom Clancy's Rainbow Six Siege","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":557,"nombre":"Transformers Devastation","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":558,"nombre":"Trials Fusion","plataforma":"XBOX ONE","genero":"","edicion":"Gold Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":559,"nombre":"UFC 2","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":560,"nombre":"Victor Vran Overkill Edition","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":561,"nombre":"Warhammer Vermintide II","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":562,"nombre":"WatchDogs 2","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":563,"nombre":"WWE 2K15","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":564,"nombre":"WWE 2K17","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":565,"nombre":"WWE 2K18","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":566,"nombre":"WWE 2K20","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":567,"nombre":"WWE 2K22","plataforma":"XBOX ONE","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":568,"nombre":"AMONG US","plataforma":"XBOX SERIES","genero":"","edicion":"Crewmate Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":569,"nombre":"Assassin's Creed Shadows","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":570,"nombre":"Atlas Fallen","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":571,"nombre":"AVATAR Frontiers of Pandora","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":572,"nombre":"Bob Esponja Cosmic Shake","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":573,"nombre":"Call of Duty Black Ops 6","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":574,"nombre":"Call of Duty Modern Warfare III","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":575,"nombre":"Chivalry II","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":576,"nombre":"Cloudpunk","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":577,"nombre":"Dishonored & Prey The Arkane Collection","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":578,"nombre":"Disney EPIC MICKEY Rebrushed","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":579,"nombre":"Eden Ring Nightreign","plataforma":"XBOX SERIES","genero":"","edicion":"Coleccionista","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":580,"nombre":"Elden Ring","plataforma":"XBOX SERIES","genero":"","edicion":"Coleccionista","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Shadow of the Erdtree comprado"},{"uid":581,"nombre":"Empire of Sin","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":582,"nombre":"F1 23","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":583,"nombre":"Guardians of the Galaxy","plataforma":"XBOX SERIES","genero":"","edicion":"Edicion Cósmica","region":"PAL FR","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":584,"nombre":"HALO Infinite","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":585,"nombre":"Hell is Us","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":586,"nombre":"Human Fall Flat","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":587,"nombre":"Immortals Fenyx Rising","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Season Pass comprado"},{"uid":588,"nombre":"Iron Harvest","plataforma":"XBOX SERIES","genero":"","edicion":"Complete Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":589,"nombre":"Lords of the Fallen","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":590,"nombre":"Maneater","plataforma":"XBOX SERIES","genero":"","edicion":"Apex Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":"Carátula con un corte pronunciado"},{"uid":591,"nombre":"Minecraft Dungeon","plataforma":"XBOX SERIES","genero":"","edicion":"Hero Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":592,"nombre":"Monster Energy Supercross 4 The Official Videogame","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":593,"nombre":"Monster Hunter Wilds","plataforma":"XBOX SERIES","genero":"","edicion":"Steelbook Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":594,"nombre":"MX vs ATV Legends","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":595,"nombre":"NBA 2K23","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":596,"nombre":"Need for Speed Unbound","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":597,"nombre":"NHL 23","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":598,"nombre":"Overcooked! All you can eat","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":599,"nombre":"Park Beyond","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":600,"nombre":"PAYDAY 3","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":601,"nombre":"Persona 5 Tactica","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":602,"nombre":"Phoenix Point","plataforma":"XBOX SERIES","genero":"","edicion":"Behemoth Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":603,"nombre":"Remothered: Broken Porcelain","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":604,"nombre":"Scars Above","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":605,"nombre":"SONIC Origins Plus","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":606,"nombre":"Star Wars Outlaws","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":607,"nombre":"Star Wars Squadrons","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":608,"nombre":"Stranger of Paradise Final Fantasy Origin","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":609,"nombre":"The Callisto Protocol","plataforma":"XBOX SERIES","genero":"","edicion":"Coleccionista","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":610,"nombre":"The Diofield Chronicle","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":611,"nombre":"Tom Clancy's Rainbow Six Extraction","plataforma":"XBOX SERIES","genero":"","edicion":"Limited Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":612,"nombre":"UFC 5","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":613,"nombre":"WatchDogs Legion","plataforma":"XBOX SERIES","genero":"","edicion":"Ultimate Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":614,"nombre":"Werewolf: The Apocalypse - Eartblood","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":615,"nombre":"Wo Long: Fallen Dinasty","plataforma":"XBOX SERIES","genero":"","edicion":"Steelbook Edition","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":616,"nombre":"World War Z: Aftermath","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":617,"nombre":"WWE 2K23","plataforma":"XBOX SERIES","genero":"","edicion":"Edición Deluxe","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":618,"nombre":"WWE BattleGrounds","plataforma":"XBOX SERIES","genero":"","edicion":"","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""},{"uid":619,"nombre":"Naruto X Boruto Ultimate Ninja Storm Collection","plataforma":"XBOX SERIES","genero":"","edicion":"Coleccionista","region":"","valor":"","puntuacion":"","finalizado":"","observaciones":""}];
+
+const STORAGE_KEY = 'gamevault_jm';
+const ALL_PLATFORMS = ['TODOS','PS2','PS3','PS4','PS5','XBOX 360','XBOX ONE','XBOX SERIES','PC','PSONE','XBOX ORIGINAL','NINTENDO SWITCH','NINTENDO WII','NINTENDO 3DS','NINTENDO DS'];
+
+function loadGames() {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(SEED));
+}
+function saveGames(games) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(games));
+}
+
+let games = loadGames();
+let activePlatform = 'TODOS';
+let currentUid = null;
+
+// ── PLATFORM BADGE CLASS ──
+function pfClass(p) {
+  if (!p) return 'pf-DEFAULT';
+  const pu = p.toUpperCase();
+  if (pu === 'PS2') return 'pf-PS2';
+  if (pu === 'PS3') return 'pf-PS3';
+  if (pu === 'PS4') return 'pf-PS4';
+  if (pu === 'PS5') return 'pf-PS5';
+  if (pu.includes('XBOX 360') || pu.includes('360')) return 'pf-XBOX360';
+  if (pu.includes('XBOX ONE') || pu.includes('ONE')) return 'pf-XBOXONE';
+  if (pu.includes('XBOX SERIES') || pu.includes('SERIES')) return 'pf-XBOXS';
+  if (pu === 'JUEGOS PC FISICOS' || pu === 'PC') return 'pf-PC';
+  return 'pf-DEFAULT';
+}
+
+// ── SCORE DISPLAY ──
+function scoreEl(s) {
+  if (!s) return `<span class="score-pill score-none">—</span>`;
+  const n = parseFloat(s);
+  if (n >= 85) return `<span class="score-pill score-high">${Math.round(n)}</span>`;
+  if (n >= 70) return `<span class="score-pill score-mid">${Math.round(n)}</span>`;
+  return `<span class="score-pill score-low">${Math.round(n)}</span>`;
+}
+
+// ── PLATFORM FILTERS ──
+function buildPlatformFilters() {
+  const wrap = document.getElementById('pf-filters');
+  const counts = {};
+  games.forEach(g => { counts[g.plataforma] = (counts[g.plataforma]||0)+1; });
+  const total = games.length;
+
+  wrap.innerHTML = ALL_PLATFORMS.map(p => {
+    const count = p === 'TODOS' ? total : (counts[p]||0);
+    const label = p === 'TODOS' ? `TODOS (${count})` : `${p} (${count})`;
+    return `<button class="pf-btn ${p === activePlatform ? 'active':''}" data-pf="${p}">${label}</button>`;
+  }).join('');
+
+  wrap.querySelectorAll('.pf-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activePlatform = btn.dataset.pf;
+      buildPlatformFilters();
+      render();
+    });
+  });
+}
+
+// ── RENDER ──
+function getFiltered() {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const status = document.getElementById('filter-status').value;
+  const sort = document.getElementById('filter-sort').value;
+
+  let list = games.filter(g => {
+    if (activePlatform !== 'TODOS' && g.plataforma !== activePlatform) return false;
+    if (q && !g.nombre.toLowerCase().includes(q) && !(g.genero||'').toLowerCase().includes(q)) return false;
+    if (status === 'SI' && g.finalizado !== 'SI') return false;
+    if (status === 'NO' && g.finalizado !== 'NO') return false;
+    return true;
+  });
+
+  if (sort === 'za') list.sort((a,b) => b.nombre.localeCompare(a.nombre, 'es'));
+  else if (sort === 'score') list.sort((a,b) => (parseFloat(b.puntuacion)||0) - (parseFloat(a.puntuacion)||0));
+  else list.sort((a,b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+  return list;
+}
+
+function render() {
+  const list = getFiltered();
+  const container = document.getElementById('game-list');
+
+  // stats
+  const fin = list.filter(g => g.finalizado === 'SI').length;
+  const pend = list.filter(g => g.finalizado === 'NO').length;
+  document.getElementById('stats-bar').innerHTML =
+    `<strong>${list.length}</strong> juegos <div class="dot"></div> <span class="badge-fin">✓ ${fin} finalizados</span> <div class="dot"></div> <span class="badge-pend">⏳ ${pend} pendientes</span>`;
+
+  if (list.length === 0) {
+    container.innerHTML = `<div class="empty">
+      <svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <p>No se encontraron juegos</p>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = list.map(g => {
+    const finClass = g.finalizado === 'SI' ? 'fin' : g.finalizado === 'NO' ? 'pend' : 'none';
+    const sub = [g.edicion, g.region, g.genero].filter(Boolean).join(' · ');
+    return `<div class="game-card ${finClass}" data-uid="${g.uid}">
+      <span class="platform-badge ${pfClass(g.plataforma)}">${g.plataforma}</span>
+      <div class="game-info">
+        <div class="game-title">${g.nombre}</div>
+        ${sub ? `<div class="game-sub">${sub}</div>` : ''}
+      </div>
+      ${scoreEl(g.puntuacion)}
+    </div>`;
+  }).join('');
+
+  container.querySelectorAll('.game-card').forEach(card => {
+    card.addEventListener('click', () => openModal(parseInt(card.dataset.uid)));
+  });
+}
+
+// ── DETAIL MODAL ──
+function openModal(uid) {
+  const g = games.find(x => x.uid === uid);
+  if (!g) return;
+  currentUid = uid;
+
+  document.getElementById('m-platform').textContent = g.plataforma;
+  document.getElementById('m-platform').className = `modal-platform platform-badge ${pfClass(g.plataforma)}`;
+  document.getElementById('m-title').textContent = g.nombre;
+  document.getElementById('m-edition').textContent = [g.edicion, g.region].filter(Boolean).join(' · ');
+
+  const rows = [];
+  if (g.genero)      rows.push(`<div class="info-row"><span class="info-label">Género</span><span class="info-val">${g.genero}</span></div>`);
+  if (g.puntuacion)  rows.push(`<div class="info-row"><span class="info-label">Puntuación</span><span class="info-val">${scoreEl(g.puntuacion)}</span></div>`);
+  if (g.finalizado)  rows.push(`<div class="info-row"><span class="info-label">Estado</span><span class="info-val ${g.finalizado==='SI'?'fin-si':g.finalizado==='NO'?'fin-no':''}">${g.finalizado === 'SI' ? '✅ Finalizado' : g.finalizado === 'NO' ? '⏳ Pendiente' : '—'}</span></div>`);
+  if (g.observaciones) rows.push(`<div class="modal-obs">📝 ${g.observaciones}</div>`);
+
+  document.getElementById('m-body').innerHTML = rows.length ? rows.join('') : '<p style="color:var(--muted);font-size:14px">Sin datos adicionales</p>';
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+document.getElementById('btn-close-modal').addEventListener('click', closeModal);
+document.getElementById('modal-bg').addEventListener('click', e => { if(e.target === document.getElementById('modal-bg')) closeModal(); });
+function closeModal() { document.getElementById('modal-bg').classList.remove('open'); currentUid = null; }
+
+document.getElementById('btn-delete').addEventListener('click', () => {
+  if (!currentUid) return;
+  if (!confirm('¿Eliminar este juego de la colección?')) return;
+  games = games.filter(g => g.uid !== currentUid);
+  saveGames(games);
+  closeModal();
+  buildPlatformFilters();
+  render();
+});
+
+// ── ADD MODAL ──
+document.getElementById('btn-add').addEventListener('click', () => {
+  document.getElementById('add-modal-bg').classList.add('open');
+  document.getElementById('f-nombre').focus();
+});
+document.getElementById('add-modal-bg').addEventListener('click', e => {
+  if (e.target === document.getElementById('add-modal-bg')) document.getElementById('add-modal-bg').classList.remove('open');
+});
+document.getElementById('btn-save').addEventListener('click', () => {
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const plataforma = document.getElementById('f-plataforma').value;
+  if (!nombre || !plataforma) { alert('Título y plataforma son obligatorios'); return; }
+  const maxUid = games.reduce((m,g) => Math.max(m,g.uid), 0);
+  const newGame = {
+    uid: maxUid + 1,
+    nombre,
+    plataforma,
+    genero: document.getElementById('f-genero').value.trim(),
+    edicion: document.getElementById('f-edicion').value.trim(),
+    region: document.getElementById('f-region').value.trim(),
+    valor: '',
+    puntuacion: document.getElementById('f-puntuacion').value.trim(),
+    finalizado: document.getElementById('f-finalizado').value,
+    observaciones: document.getElementById('f-observaciones').value.trim(),
+  };
+  games.push(newGame);
+  saveGames(games);
+  document.getElementById('add-modal-bg').classList.remove('open');
+  ['f-nombre','f-plataforma','f-genero','f-edicion','f-region','f-puntuacion','f-finalizado','f-observaciones'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = el.tagName === 'SELECT' ? '' : '';
+  });
+  buildPlatformFilters();
+  render();
+});
+
+// ── SEARCH & FILTER ──
+document.getElementById('search').addEventListener('input', render);
+document.getElementById('filter-status').addEventListener('change', render);
+document.getElementById('filter-sort').addEventListener('change', render);
+
+// ── INIT ──
+buildPlatformFilters();
+render();
+</script>
+</body>
+</html>
