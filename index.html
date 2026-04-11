@@ -519,67 +519,82 @@ const IGDB_PLATFORM_MAP = {
 };
 
 async function lookupBarcode(barcode){
-  document.getElementById('scanner-status').textContent = 'Buscando en IGDB...';
+  document.getElementById('scanner-status').textContent = 'Buscando codigo '+barcode+'...';
   try{
-    // Use IGDB via proxy-free approach - search by name after UPC lookup
-    // First try Open UPC DB (free, no key needed)
-    const upcRes = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`);
-    const upcData = await upcRes.json();
-    let searchName = '';
-    if(upcData.items && upcData.items[0]){
-      searchName = upcData.items[0].title || upcData.items[0].brand || '';
-      // Clean up common suffixes
-      searchName = searchName.replace(/\s*(PS4|PS5|Xbox|Switch|Nintendo|PlayStation|\d+).*$/i,'').trim();
+    // Step 1: search IGDB directly by barcode via the external_games endpoint
+    const barcodeRes = await fetch(IGDB_PROXY, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer '+SUPABASE_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        query: `fields game,uid; where uid = "${barcode}" & category = (1,5,6,13); limit 1;`,
+        endpoint: 'external_games'
+      })
+    });
+    let gameId = null;
+    if(barcodeRes.ok){
+      const barcodeData = await barcodeRes.json();
+      if(barcodeData && barcodeData.length && barcodeData[0].game) gameId = barcodeData[0].game;
     }
-    if(!searchName){
-      document.getElementById('scanner-status').textContent = 'Codigo no encontrado. Prueba manual.';
-      return null;
+    if(gameId){
+      // Get full game details by ID
+      const gameRes = await fetch(IGDB_PROXY, {
+        method:'POST',
+        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},
+        body: JSON.stringify({query:`fields name,platforms.name,genres.name,cover.url,summary; where id = ${gameId}; limit 1;`})
+      });
+      if(gameRes.ok){
+        const gameData = await gameRes.json();
+        if(gameData && gameData.length) return gameData[0];
+      }
     }
-    // Now search IGDB
-    return await searchIGDB(searchName);
+    // Step 2: fallback — search by barcode as name keyword
+    document.getElementById('scanner-status').textContent = 'Buscando por nombre...';
+    // Try UPC lookup for product name
+    try{
+      const upcRes = await fetch('https://api.upcitemdb.com/prod/trial/lookup?upc='+barcode);
+      if(upcRes.ok){
+        const upcData = await upcRes.json();
+        if(upcData.items && upcData.items[0]){
+          let name = upcData.items[0].title || '';
+          name = name.replace(/\s*(para|for|ps[0-9]|xbox|switch|nintendo|playstation|\bps\b|\bxb\b).*$/i,'').trim();
+          if(name){ return await searchIGDB(name); }
+        }
+      }
+    }catch(e2){}
+    document.getElementById('scanner-status').textContent = 'No encontrado. Prueba el campo manual.';
+    return null;
   }catch(e){
-    document.getElementById('scanner-status').textContent = 'Error de conexion';
+    document.getElementById('scanner-status').textContent = 'Error: '+e.message;
     return null;
   }
 }
 
 async function searchIGDB(query){
   try{
-    const res = await fetch('https://api.igdb.com/v4/games', {
-      method:'POST',
-      headers:{
-        'Client-ID': IGDB_CLIENT_ID,
-        'Authorization': 'Bearer '+IGDB_TOKEN,
-        'Content-Type':'text/plain'
+    const res = await fetch(IGDB_PROXY, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer '+SUPABASE_KEY,
+        'Content-Type': 'application/json'
       },
-      body:`fields name,platforms.name,genres.name,cover.url,summary; search "${query}"; limit 5; where version_parent = null;`
+      body: JSON.stringify({
+        query: `fields name,platforms.name,genres.name,cover.url,summary; search "${query}"; limit 5; where version_parent = null;`
+      })
     });
-    if(!res.ok) throw new Error('IGDB error');
+    if(!res.ok) throw new Error('Proxy error '+res.status);
     const results = await res.json();
+    if(results && results.error) throw new Error(results.error);
     return results && results.length ? results[0] : null;
   }catch(e){
-    // IGDB CORS - use alternative
-    return await searchIGDBFallback(query);
+    console.error('IGDB proxy error:', e);
+    document.getElementById('scanner-status').textContent = 'Error: '+e.message;
+    return null;
   }
-}
-
-async function searchIGDBFallback(query){
-  // Use RAWG as CORS-friendly fallback (no key for basic search)
-  try{
-    const res = await fetch(`https://api.rawg.io/api/games?search=${encodeURIComponent(query)}&key=&page_size=1`);
-    const data = await res.json();
-    if(data.results && data.results[0]){
-      const g = data.results[0];
-      return {
-        name: g.name,
-        _rawg: true,
-        genres: (g.genres||[]).map(x=>{return{name:x.name}}),
-        platforms: (g.platforms||[]).map(x=>{return{name:x.platform.name}}),
-        cover: g.background_image ? {url:g.background_image} : null
-      };
-    }
-  }catch(e){}
-  return null;
 }
 
 function applyIGDBResult(result){
