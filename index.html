@@ -457,10 +457,14 @@ async function lookupBarcode(barcode){
       const gdata = await callIGDB('fields name,platforms.name,genres.name,cover.url; where id = '+gameId+'; limit 1;');
       if(gdata && gdata.length) return gdata[0];
     }
-    // Fallback: UPC lookup then IGDB search
+    // Fallback: UPC lookup via proxy then IGDB search
     st.textContent = 'Buscando por nombre...';
     try{
-      const upcRes = await fetch('https://api.upcitemdb.com/prod/trial/lookup?upc='+barcode);
+      const upcRes = await fetch(IGDB_PROXY, {
+        method:'POST',
+        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({upc:barcode})
+      });
       if(upcRes.ok){
         const upcData = await upcRes.json();
         if(upcData.items && upcData.items[0]){
@@ -469,7 +473,7 @@ async function lookupBarcode(barcode){
           if(name) return await searchIGDB(name);
         }
       }
-    }catch(e){}
+    }catch(e){console.log('UPC proxy error:',e);}
     st.textContent = 'No encontrado. Escribe el codigo o nombre manualmente.';
     return null;
   }catch(e){st.textContent='Error: '+e.message;return null;}
