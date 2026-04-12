@@ -204,6 +204,35 @@ header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.96);backdrop-
 </style>
 </head>
 <body>
+<div class="pin-overlay" id="pin-overlay">
+  <div class="pin-box">
+    <div class="pin-logo">GAME<span>VAULT</span></div>
+    <div class="pin-subtitle">Introduce tu PIN para acceder</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+      <div class="pin-dot" id="pd4"></div>
+      <div class="pin-dot" id="pd5"></div>
+    </div>
+    <div class="pin-keypad">
+      <button class="pin-key" data-k="1">1</button>
+      <button class="pin-key" data-k="2">2</button>
+      <button class="pin-key" data-k="3">3</button>
+      <button class="pin-key" data-k="4">4</button>
+      <button class="pin-key" data-k="5">5</button>
+      <button class="pin-key" data-k="6">6</button>
+      <button class="pin-key" data-k="7">7</button>
+      <button class="pin-key" data-k="8">8</button>
+      <button class="pin-key" data-k="9">9</button>
+      <button class="pin-key del" data-k="del">&#9003;</button>
+      <button class="pin-key" data-k="0">0</button>
+      <button class="pin-key del" data-k="clr">C</button>
+    </div>
+    <div class="pin-error hidden" id="pin-error">PIN incorrecto</div>
+  </div>
+</div>
 <header>
   <div class="header-inner">
     <div class="logo">GAME<span>VAULT</span></div>
@@ -799,34 +828,5 @@ loadFromCloud();
 
 </script>
 
-<div class="pin-overlay" id="pin-overlay">
-  <div class="pin-box">
-    <div class="pin-logo">GAME<span>VAULT</span></div>
-    <div class="pin-subtitle">Introduce tu PIN para acceder</div>
-    <div class="pin-dots" id="pin-dots">
-      <div class="pin-dot" id="pd0"></div>
-      <div class="pin-dot" id="pd1"></div>
-      <div class="pin-dot" id="pd2"></div>
-      <div class="pin-dot" id="pd3"></div>
-      <div class="pin-dot" id="pd4"></div>
-      <div class="pin-dot" id="pd5"></div>
-    </div>
-    <div class="pin-keypad">
-      <button class="pin-key" data-k="1">1</button>
-      <button class="pin-key" data-k="2">2</button>
-      <button class="pin-key" data-k="3">3</button>
-      <button class="pin-key" data-k="4">4</button>
-      <button class="pin-key" data-k="5">5</button>
-      <button class="pin-key" data-k="6">6</button>
-      <button class="pin-key" data-k="7">7</button>
-      <button class="pin-key" data-k="8">8</button>
-      <button class="pin-key" data-k="9">9</button>
-      <button class="pin-key del" data-k="del">&#9003;</button>
-      <button class="pin-key" data-k="0">0</button>
-      <button class="pin-key del" data-k="clr">C</button>
-    </div>
-    <div class="pin-error hidden" id="pin-error">PIN incorrecto</div>
-  </div>
-</div>
 </body>
 </html>
