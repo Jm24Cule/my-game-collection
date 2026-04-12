@@ -184,6 +184,23 @@ header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.96);backdrop-
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(20px);background:#1e1e2e;border:1px solid var(--border);border-radius:10px;padding:10px 18px;font-size:14px;color:var(--text);z-index:999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;max-width:90vw}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.pin-overlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+.pin-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:36px 28px;width:100%;max-width:320px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px}
+.pin-logo{font-family:"Rajdhani",sans-serif;font-weight:700;font-size:28px;color:var(--accent);letter-spacing:3px}
+.pin-logo span{color:var(--text)}
+.pin-subtitle{font-size:14px;color:var(--muted)}
+.pin-dots{display:flex;gap:14px;justify-content:center}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:var(--border);transition:background .15s}
+.pin-dot.filled{background:var(--accent)}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+.pin-key{background:var(--card);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:"Rajdhani",sans-serif;font-weight:600;font-size:22px;padding:16px;cursor:pointer;transition:all .1s;user-select:none}
+.pin-key:active{background:var(--border);transform:scale(.93)}
+.pin-key.del{color:var(--muted);font-size:16px}
+.pin-error{font-size:13px;color:var(--accent);min-height:18px;transition:opacity .2s}
+.pin-error.hidden{opacity:0}
+
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
 </style>
 </head>
 <body>
@@ -717,6 +734,99 @@ document.getElementById('filter-sort').addEventListener('change',render);
 document.getElementById('game-list').innerHTML='<div class="loading"><div class="spinner"></div>Cargando coleccion...</div>';
 document.getElementById('btn-view-list').classList.add('active-view');
 loadFromCloud();
+
+// ── PIN AUTH ────────────────────────────────────────────────────────────────
+(function(){
+  const HASH = '44e25ad115fbded15976b291a4c639572e0919f915a8ffe2af256c93a1bec21e';
+  const DAYS = 30;
+  const SK   = 'gv_session';
+
+  async function sha256(str){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+
+  function sessionValid(){
+    try{
+      const s = JSON.parse(localStorage.getItem(SK)||'null');
+      if(!s||!s.ts||!s.ok)return false;
+      return (Date.now()-s.ts)<DAYS*86400000;
+    }catch(e){return false;}
+  }
+
+  function grantAccess(){
+    localStorage.setItem(SK,JSON.stringify({ok:true,ts:Date.now()}));
+    const overlay=document.getElementById('pin-overlay');
+    if(overlay){overlay.style.transition='opacity .3s';overlay.style.opacity='0';setTimeout(()=>overlay.remove(),300);}
+  }
+
+  if(sessionValid()){
+    document.getElementById('pin-overlay').remove();
+    return;
+  }
+
+  let entered='';
+  function updateDots(){
+    for(let i=0;i<6;i++){
+      const d=document.getElementById('pd'+i);
+      if(d)d.className='pin-dot'+(i<entered.length?' filled':'');
+    }
+  }
+
+  document.querySelectorAll('.pin-key').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      const k=btn.dataset.k;
+      if(k==='del'){entered=entered.slice(0,-1);}
+      else if(k==='clr'){entered='';}
+      else if(entered.length<6){entered+=k;}
+      updateDots();
+      const errEl=document.getElementById('pin-error');
+      if(entered.length===6){
+        const h=await sha256(entered);
+        if(h===HASH){
+          grantAccess();
+        }else{
+          errEl.classList.remove('hidden');
+          document.getElementById('pin-dots').style.animation='shake .3s';
+          setTimeout(()=>{entered='';updateDots();document.getElementById('pin-dots').style.animation='';errEl.classList.add('hidden');},900);
+        }
+      }else{
+        errEl.classList.add('hidden');
+      }
+    });
+  });
+})();
+
 </script>
+
+<div class="pin-overlay" id="pin-overlay">
+  <div class="pin-box">
+    <div class="pin-logo">GAME<span>VAULT</span></div>
+    <div class="pin-subtitle">Introduce tu PIN para acceder</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+      <div class="pin-dot" id="pd4"></div>
+      <div class="pin-dot" id="pd5"></div>
+    </div>
+    <div class="pin-keypad">
+      <button class="pin-key" data-k="1">1</button>
+      <button class="pin-key" data-k="2">2</button>
+      <button class="pin-key" data-k="3">3</button>
+      <button class="pin-key" data-k="4">4</button>
+      <button class="pin-key" data-k="5">5</button>
+      <button class="pin-key" data-k="6">6</button>
+      <button class="pin-key" data-k="7">7</button>
+      <button class="pin-key" data-k="8">8</button>
+      <button class="pin-key" data-k="9">9</button>
+      <button class="pin-key del" data-k="del">&#9003;</button>
+      <button class="pin-key" data-k="0">0</button>
+      <button class="pin-key del" data-k="clr">C</button>
+    </div>
+    <div class="pin-error hidden" id="pin-error">PIN incorrecto</div>
+  </div>
+</div>
 </body>
 </html>
