@@ -312,7 +312,6 @@ header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.96);backdrop-
       <button class="icon-btn" id="btn-view-list" title="Vista lista">&#9776;</button>
       <button class="icon-btn" id="btn-view-grid" title="Vista grid">&#9638;</button>
       <button class="icon-btn desktop-only" id="btn-import" title="Importar CSV">&#128229;</button>
-      <button class="icon-btn desktop-only" id="btn-migrate-covers" title="Migrar carátulas al bucket" style="background:#4d9fff;border-color:#4d9fff;color:#fff;font-size:11px;width:auto;padding:0 8px;">&#128247; Migrar</button>
       <button class="icon-btn accent" id="btn-add" title="Añadir juego">+</button>
     </div>
   </div>
@@ -1253,54 +1252,7 @@ document.getElementById('game-list').innerHTML='<div class="loading"><div class=
 document.getElementById('btn-view-list').classList.add('active-view');
 loadFromCloud();
 
-// ── MIGRACIÓN BASE64 → BUCKET ────────────────────────────────────────────────
-document.getElementById('btn-migrate-covers').addEventListener('click',async()=>{
-  const b64Games=games.filter(g=>g.caratula&&g.caratula.startsWith('data:image'));
-  if(b64Games.length===0){toast('No hay carátulas en base64 para migrar ✓');return;}
-  if(!confirm(`Se migrarán ${b64Games.length} carátulas en base64 al bucket.\n¿Continuar?`))return;
-
-  const overlay=document.getElementById('migrate-overlay');
-  const bar=document.getElementById('migrate-bar');
-  const msg=document.getElementById('migrate-msg');
-  overlay.style.display='flex';
-  let done=0,errors=0;
-  const total=b64Games.length;
-
-  for(const g of b64Games){
-    msg.textContent=`(${done+errors+1}/${total}) ${g.nombre}`;
-    try{
-      const res=await fetch(g.caratula);
-      const blob=await res.blob();
-      const compressed=await compressImage(blob,100);
-      if(!compressed)throw new Error('compress');
-      const url=await uploadCover(compressed);
-      await sbFetch('games?uid=eq.'+g.uid,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({caratula:url})});
-      const idx=games.findIndex(x=>x.uid===g.uid);
-      if(idx>=0)games[idx].caratula=url;
-      done++;
-    }catch(e){console.error('migrate error',g.nombre,e);errors++;}
-    bar.style.width=Math.round((done+errors)/total*100)+'%';
-  }
-
-  localStorage.setItem('gv_fallback',JSON.stringify(games));
-  render();
-  msg.textContent=`✓ ${done} migradas correctamente${errors?` · ${errors} errores`:''}. Puedes eliminar el botón "Migrar".`;
-  bar.style.background='var(--green)';
-  document.getElementById('migrate-close').style.display='block';
-});
-document.getElementById('migrate-close').addEventListener('click',()=>{document.getElementById('migrate-overlay').style.display='none';});
 </script>
 
-<!-- Overlay migración -->
-<div id="migrate-overlay" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(10,10,15,.92);align-items:center;justify-content:center;padding:20px;">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:16px;">
-    <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:18px;color:var(--accent);">&#128247; Migrando carátulas</div>
-    <div id="migrate-msg" style="font-size:13px;color:var(--muted);">Iniciando...</div>
-    <div style="background:var(--card);border-radius:6px;height:8px;overflow:hidden;">
-      <div id="migrate-bar" style="height:100%;width:0%;background:var(--blue);border-radius:6px;transition:width .3s;"></div>
-    </div>
-    <button id="migrate-close" style="display:none;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;padding:10px;cursor:pointer;">Cerrar</button>
-  </div>
-</div>
 </body>
 </html>
