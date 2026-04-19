@@ -312,6 +312,7 @@ header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.96);backdrop-
       <button class="icon-btn" id="btn-view-list" title="Vista lista">&#9776;</button>
       <button class="icon-btn" id="btn-view-grid" title="Vista grid">&#9638;</button>
       <button class="icon-btn desktop-only" id="btn-import" title="Importar CSV">&#128229;</button>
+      <button class="icon-btn desktop-only" id="btn-enrich" title="Completar géneros y carátulas desde IGDB" style="background:#c084fc;border-color:#c084fc;color:#fff;font-size:11px;width:auto;padding:0 8px;">&#10024; Completar</button>
       <button class="icon-btn accent" id="btn-add" title="Añadir juego">+</button>
     </div>
   </div>
@@ -1252,7 +1253,120 @@ document.getElementById('game-list').innerHTML='<div class="loading"><div class=
 document.getElementById('btn-view-list').classList.add('active-view');
 loadFromCloud();
 
+// ── ENRIQUECIMIENTO MASIVO IGDB ───────────────────────────────────────────────
+const IGDB_GENRE_MAP={
+  2:{g:'Aventura',s:'Point-And-Click'},
+  4:{g:'Lucha',s:''},
+  5:{g:'Shooter',s:''},
+  7:{g:'Ritmo',s:''},
+  8:{g:'Acción',s:'Plataformas'},
+  9:{g:'Puzzle',s:''},
+  10:{g:'Carreras',s:''},
+  11:{g:'Estrategia',s:'RTS'},
+  12:{g:'RPG',s:''},
+  13:{g:'Simulación',s:''},
+  14:{g:'Deportes',s:''},
+  15:{g:'Estrategia',s:''},
+  16:{g:'Estrategia',s:'Estrategia por Turnos'},
+  24:{g:'Estrategia',s:'Tácticas por Turnos'},
+  25:{g:'Acción',s:'Hack and Slash'},
+  26:{g:'Casual',s:'Trivial'},
+  31:{g:'Aventura',s:''},
+  33:{g:'Acción',s:''},
+  34:{g:'Aventura',s:'Novela Visual'},
+  35:{g:'Casual',s:'Cartas'},
+  36:{g:'Estrategia',s:'MOBA'},
+  38:{g:'Casual',s:'Pinball'},
+  39:{g:'Aventura',s:''}
+};
+
+document.getElementById('btn-enrich').addEventListener('click',async()=>{
+  const allGames=await sbFetch('games?select=*&order=uid.asc&limit=3000');
+  if(!allGames){toast('Error al cargar juegos');return;}
+  const toProcess=allGames.filter(g=>!g.genero?.trim()||!g.caratula?.trim());
+  if(toProcess.length===0){toast('Todos los juegos ya tienen género y carátula ✓');return;}
+  if(!confirm(`Se procesarán ${toProcess.length} juegos sin género o carátula.\nEsto puede tardar varios minutos.\n¿Continuar?`))return;
+
+  const overlay=document.getElementById('enrich-overlay');
+  const bar=document.getElementById('enrich-bar');
+  const msg=document.getElementById('enrich-msg');
+  const log=document.getElementById('enrich-log');
+  overlay.style.display='flex';
+  let done=0,skipped=0,errors=0;
+  const total=toProcess.length;
+
+  for(const g of toProcess){
+    msg.textContent=`(${done+skipped+errors+1}/${total}) ${g.nombre}`;
+    try{
+      const clean=g.nombre.replace(/"/g,'').replace(/[:\-–]/g,' ').trim();
+      const results=await callIGDB(`fields name,genres.id,cover.url; search "${clean}"; limit 5; where version_parent = null;`);
+      await new Promise(r=>setTimeout(r,350));
+      if(!results||!results.length){skipped++;log.textContent=`Sin resultado: ${g.nombre}`;bar.style.width=Math.round((done+skipped+errors)/total*100)+'%';continue;}
+      const result=results[0];
+      const updates={};
+
+      // Género
+      if(!g.genero?.trim()&&result.genres?.length){
+        for(const genre of result.genres){
+          const mapped=IGDB_GENRE_MAP[genre.id];
+          if(mapped){
+            updates.genero=mapped.g;
+            if(mapped.s){
+              const subs=(g.subgeneros||'').split(',').map(x=>x.trim()).filter(Boolean);
+              if(!subs.includes(mapped.s))subs.push(mapped.s);
+              updates.subgeneros=subs.join(', ');
+            }
+            break;
+          }
+        }
+      }
+
+      // Carátula
+      if(!g.caratula?.trim()&&result.cover?.url){
+        let url=result.cover.url;
+        if(url.startsWith('//'))url='https:'+url;
+        url=url.replace('t_thumb','t_cover_big');
+        try{
+          const blob=await compressImage(url,100);
+          if(blob){updates.caratula=await uploadCover(blob);}
+        }catch(e){console.warn('cover err',g.nombre,e);}
+      }
+
+      if(Object.keys(updates).length>0){
+        updates.updated_at=new Date().toISOString();
+        await sbFetch('games?uid=eq.'+g.uid,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify(updates)});
+        const idx=games.findIndex(x=>x.uid===g.uid);
+        if(idx>=0)Object.assign(games[idx],updates);
+        log.textContent=`✓ ${g.nombre}`;
+        done++;
+      }else{skipped++;log.textContent=`Sin datos útiles: ${g.nombre}`;}
+    }catch(e){console.error('enrich err',g.nombre,e);errors++;log.textContent=`Error: ${g.nombre}`;}
+    bar.style.width=Math.round((done+skipped+errors)/total*100)+'%';
+    await new Promise(r=>setTimeout(r,150));
+  }
+
+  localStorage.setItem('gv_fallback',JSON.stringify(games));
+  render();
+  msg.textContent=`Completado: ${done} actualizados · ${skipped} sin datos IGDB · ${errors} errores`;
+  bar.style.background='var(--green)';
+  document.getElementById('enrich-close').style.display='block';
+});
+document.getElementById('enrich-close').addEventListener('click',()=>{document.getElementById('enrich-overlay').style.display='none';});
+
 </script>
+
+<!-- Overlay enriquecimiento -->
+<div id="enrich-overlay" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(10,10,15,.92);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 24px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:14px;">
+    <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:18px;color:var(--purple);">&#10024; Completando catálogo</div>
+    <div id="enrich-msg" style="font-size:13px;color:var(--text);">Iniciando...</div>
+    <div style="background:var(--card);border-radius:6px;height:8px;overflow:hidden;">
+      <div id="enrich-bar" style="height:100%;width:0%;background:var(--purple);border-radius:6px;transition:width .3s;"></div>
+    </div>
+    <div id="enrich-log" style="font-size:11px;color:var(--muted);min-height:16px;"></div>
+    <button id="enrich-close" style="display:none;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;padding:10px;cursor:pointer;">Cerrar</button>
+  </div>
+</div>
 
 </body>
 </html>
