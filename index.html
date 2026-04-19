@@ -757,9 +757,13 @@ async function lookupBarcode(barcode){
     st.textContent='No encontrado. Escribe el nombre manualmente.';return null;
   }catch(e){st.textContent='Error: '+e.message;return null;}
 }
-// ── COVER BUCKET ─────────────────────────────────────────────────────────────
+// ── SUPABASE CLIENT + AUTH ANÓNIMA ────────────────────────────────────────────
 const COVER_BUCKET='game_covers';
-const sbStorage=supabase.createClient(SUPABASE_URL,SUPABASE_KEY).storage;
+const sbClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+(async()=>{
+  const {data:{session}}=await sbClient.auth.getSession();
+  if(!session)await sbClient.auth.signInAnonymously();
+})();
 
 async function compressImage(source,maxKB=100){
   let blob;
@@ -794,9 +798,9 @@ async function compressImage(source,maxKB=100){
 
 async function uploadCover(blob){
   const filename=`cover_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-  const {error}=await sbStorage.from(COVER_BUCKET).upload(filename,blob,{contentType:'image/jpeg',upsert:true});
+  const {error}=await sbClient.storage.from(COVER_BUCKET).upload(filename,blob,{contentType:'image/jpeg',upsert:true});
   if(error)throw new Error('Upload error: '+error.message);
-  const {data}=sbStorage.from(COVER_BUCKET).getPublicUrl(filename);
+  const {data}=sbClient.storage.from(COVER_BUCKET).getPublicUrl(filename);
   return data.publicUrl;
 }
 
