@@ -1351,7 +1351,9 @@ document.getElementById('btn-enrich').addEventListener('click',async()=>{
   bar.style.background='var(--green)';
   document.getElementById('enrich-close').style.display='block';
 });
-document.getElementById('enrich-close').addEventListener('click',()=>{document.getElementById('enrich-overlay').style.display='none';});
+window.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('enrich-close').addEventListener('click',()=>{document.getElementById('enrich-overlay').style.display='none';});
+});
 
 </script>
 
