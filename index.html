@@ -598,7 +598,6 @@ header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.96);backdrop-
 </div>
 <div class="toast" id="toast"></div>
 <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 
 const SUPABASE_URL = 'https://alvpgacdelhemwrhqodn.supabase.co';
@@ -757,22 +756,11 @@ async function lookupBarcode(barcode){
     st.textContent='No encontrado. Escribe el nombre manualmente.';return null;
   }catch(e){st.textContent='Error: '+e.message;return null;}
 }
-// ── SUPABASE CLIENT + AUTH ANÓNIMA ────────────────────────────────────────────
-const COVER_BUCKET='game_covers';
-const sbClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-(async()=>{
-  const {data:{session}}=await sbClient.auth.getSession();
-  if(!session)await sbClient.auth.signInAnonymously();
-})();
-
-async function compressImage(source,maxKB=100){
-  let blob;
-  if(typeof source==='string'){
-    try{const res=await fetch(source);blob=await res.blob();}catch(e){return null;}
-  }else{blob=source;}
+// ── COMPRESIÓN DE IMAGEN (subida manual → base64 comprimido) ─────────────────
+async function compressToBase64(file,maxKB=100){
   return new Promise(resolve=>{
     const img=new Image();
-    const blobUrl=URL.createObjectURL(blob);
+    const blobUrl=URL.createObjectURL(file);
     img.onload=()=>{
       URL.revokeObjectURL(blobUrl);
       const canvas=document.createElement('canvas');
@@ -783,25 +771,15 @@ async function compressImage(source,maxKB=100){
       canvas.getContext('2d').drawImage(img,0,0,w,h);
       let quality=0.85;
       const attempt=()=>{
-        canvas.toBlob(b=>{
-          if(!b){resolve(null);return;}
-          if(b.size<=maxKB*1024||quality<=0.1){resolve(b);}
-          else{quality=Math.max(0.1,quality-0.1);attempt();}
-        },'image/jpeg',quality);
+        const b64=canvas.toDataURL('image/jpeg',quality);
+        if(b64.length<=maxKB*1024*1.37||quality<=0.1){resolve(b64);}
+        else{quality=Math.max(0.1,quality-0.1);attempt();}
       };
       attempt();
     };
     img.onerror=()=>{URL.revokeObjectURL(blobUrl);resolve(null);};
     img.src=blobUrl;
   });
-}
-
-async function uploadCover(blob){
-  const filename=`cover_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-  const {error}=await sbClient.storage.from(COVER_BUCKET).upload(filename,blob,{contentType:'image/jpeg',upsert:true});
-  if(error)throw new Error('Upload error: '+error.message);
-  const {data}=sbClient.storage.from(COVER_BUCKET).getPublicUrl(filename);
-  return data.publicUrl;
 }
 
 async function applyIGDBResult(result){
@@ -815,11 +793,6 @@ async function applyIGDBResult(result){
     document.getElementById('cover-clear').classList.add('visible');
     document.getElementById('cover-upload-text').style.display='none';
     currentCoverB64=url;
-    // Compress and upload to bucket in background
-    try{
-      const blob=await compressImage(url,100);
-      if(blob){const bucketUrl=await uploadCover(blob);currentCoverB64=bucketUrl;prev.src=bucketUrl;}
-    }catch(e){console.warn('Cover bucket upload failed, using IGDB URL',e);}
   }
   document.getElementById('scan-result-box').classList.add('visible');
   document.getElementById('sr-title').textContent=result.name;
@@ -1149,16 +1122,14 @@ document.getElementById('cover-file-input').addEventListener('change',async e=>{
   const uploadText=document.getElementById('cover-upload-text');
   uploadText.style.display='';uploadText.textContent='Comprimiendo...';
   try{
-    const blob=await compressImage(file,100);
-    if(!blob){toast('Error al procesar la imagen');uploadText.textContent='Pulsa para subir imagen';return;}
-    uploadText.textContent='Subiendo...';
-    const url=await uploadCover(blob);
-    currentCoverB64=url;
+    const b64=await compressToBase64(file,100);
+    if(!b64){toast('Error al procesar la imagen');uploadText.textContent='Pulsa para subir imagen';return;}
+    currentCoverB64=b64;
     const prev=document.getElementById('cover-preview');
-    prev.src=url;prev.classList.add('visible');
+    prev.src=b64;prev.classList.add('visible');
     document.getElementById('cover-clear').classList.add('visible');
     uploadText.style.display='none';
-  }catch(err){toast('Error al subir la imagen');uploadText.textContent='Pulsa para subir imagen';console.error(err);}
+  }catch(err){toast('Error al procesar la imagen');uploadText.textContent='Pulsa para subir imagen';console.error(err);}
 });
 document.getElementById('cover-clear').addEventListener('click',e=>{
   e.stopPropagation();currentCoverB64=null;
@@ -1324,15 +1295,12 @@ document.getElementById('btn-enrich').addEventListener('click',async()=>{
         }
       }
 
-      // Carátula
+      // Carátula: guardar URL de IGDB directamente
       if(!g.caratula?.trim()&&result.cover?.url){
         let url=result.cover.url;
         if(url.startsWith('//'))url='https:'+url;
         url=url.replace('t_thumb','t_cover_big');
-        try{
-          const blob=await compressImage(url,100);
-          if(blob){updates.caratula=await uploadCover(blob);}
-        }catch(e){console.warn('cover err',g.nombre,e);}
+        updates.caratula=url;
       }
 
       if(Object.keys(updates).length>0){
